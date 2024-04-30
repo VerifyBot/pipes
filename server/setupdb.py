@@ -31,6 +31,8 @@ tabels = dict(
     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, 
     description TEXT NOT NULL,
     webhook_url TEXT NOT NULL,
+    hmac_header TEXT DEFAULT NULL,
+    hmac_secret TEXT DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP,
     is_active BOOLEAN DEFAULT TRUE,
@@ -49,7 +51,7 @@ async def setup_db(pool: asyncpg.Pool, redo: list = None):
           continue
 
         logging.info(f"Dropping table {table}")
-        await conn.execute(f"DROP TABLE IF EXISTS {table}")
+        await conn.execute(f"DROP TABLE IF EXISTS {table} CASCADE;")
 
       logging.info(f"Creating table {table}")
       await conn.execute(tabels[table])
@@ -71,4 +73,4 @@ async def main(*args, **kwargs):
 
 if __name__ == "__main__":
   loop = asyncio.get_event_loop()
-  loop.run_until_complete(main(redo=["users", "pipes"]))
+  loop.run_until_complete(main(redo=["pipes"]))

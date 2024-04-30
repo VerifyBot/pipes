@@ -24,7 +24,7 @@ async def route_connect(request: Request):
     response_type="code",
     client_id=request.app.ctx.config.get("discord", "client_id"),
     scope=request.app.ctx.config.get("discord", "scope"),
-    redirect_uri=request.app.ctx.WEBSITE_URL + "/oauth2/callback",
+    redirect_uri=request.app.ctx.SERVER_URL + "/oauth2/callback",
     state=state,
     prompt="none",  # consent screen is not shown if user has already authorized (use "consent" to show it anyway)
   ))
@@ -58,7 +58,7 @@ async def route_callback(request: Request, db: Database):
       code,
       request.app.ctx.config.get("discord", "client_id"),
       request.app.ctx.config.get("discord", "client_secret"),
-      request.app.ctx.WEBSITE_URL
+      request.app.ctx.SERVER_URL
     )
   except OAuthError as e:
     return json({"error": "oauth_error", "msg": str(e)})
@@ -92,7 +92,7 @@ async def route_callback(request: Request, db: Database):
     email=js["email"],
     username=js["username"],
     avatar=js["avatar"],
-    role=RoleEnum.admin if js["id"] in APP_ADMINS else RoleEnum.user,
+    role=RoleEnum.admin if js["id"] in request.app.ctx.APP_ADMINS else RoleEnum.user,
     access_token=access_token,
     refresh_token=refresh_token,
     expires_at=expires_at,

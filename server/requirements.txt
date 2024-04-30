@@ -1,0 +1,6 @@
+sanic[ext]
+humanize
+aiohttp
+asyncpg
+coloredlogs
+aiocache

@@ -4,7 +4,7 @@ pipe those webhooks to Discord
 
 ## 🎉 Motivation
 
-Many services offer you to add a webhook url to get notified when something happens.
+Many services offer you to add a webhook url to get notified when something happens (eg: [github](https://docs.github.com/en/webhooks/about-webhooks)).
 
 But what if you want a Discord Bot to handle that? <br>
 Well, unless you're running on a
@@ -14,36 +14,36 @@ If you're like me, you're going to think about using Discord's Webhook feature t
 and then intercept those messages with the bot via an [on_message](https://discordpy.readthedocs.io/en/stable/api.html#discord.on_message) event.
 Yay, Everything is good now! Right...?
 
-Sadly no, those providers that offer you to add a webhook url, they don't allow you to customize the payload.
+Sadly no, those providers that offer you to add a webhook url don't allow you to customize the payload.
 Therefore, while discord requires a payload to be in a specific format, ie: `{"content": "Hello, World!"}`,
 the webhook provider might send the payload as `"Hello, World!"`.
 Get the problem now?
 
 While solutions like [Pipedream](https://pipedream.com/) or [Zapier](https://zapier.com/) exist (and are so great),
-they are not free, or their free tier is very limited (Pipedream allows 100 events per day).
+they are not free, or their free tier is very limited (Pipedream allows 25 credits/events per day).
 
-This is where **Pipes** comes in. It's a simple, self-hosted and free solution to pipe those webhooks to Discord.
+This is where **🚀 Pipes** comes in. It's a simple, self-hosted and free solution to pipe those webhooks to Discord.
 All you need is a domain (don't be scared) and a server (DigitalOcean offers a generous free tier).
+
+You may also use the official [**🚀 Pipes**](https://usepipes.web.app/) website (server uptime is not guarenteed)
 
 Hopefuly, this will help you as much as it helped me.
 
 ## 🎯 Goals
-My goal is to be able to have dynamic subdomains, just because it's cool:
-```
-Your URLs:
-374753f3.m.pipes.me --> https://discord.com/api/webhooks/...
-d64319bb.m.pipes.me --> https://discord.com/api/webhooks/...
-3b231f9d.m.pipes.me --> https://discord.com/api/webhooks/...
-...
-```
 
-I've done it one time with PHP like 4 years ago (.htaccess).
-
-Future reference for me: [Let's Encrypt FAQ](https://letsencrypt.org/docs/faq/#does-let-s-encrypt-issue-wildcard-certificates), [DigitalOcean Tutorial](https://www.digitalocean.com/community/tutorials/how-to-create-let-s-encrypt-wildcard-certificates-with-certbot).
-
-In case I won't manage (or it's too expensive), I'll just use a single domain, and have it like:
-`m.pipes.me/374753f3`, etc. Which is still cool, but not as cool as the first one :).
-
+- [x] In order to avoid/monitor spammers and abuse, I want to implement an authentication system.
+        The current solution is Discord's OAuth2, that way I can both verify that you even need this service,
+        and if I ever want to add features that require Discord user data, I can change the scope and do so.
+- [x] One of my main gols is to be able to have dynamic subdomains, just because it's cool:
+    ```
+    Your URLs:
+    374753f3.m.pipes.me --> https://discord.com/api/webhooks/...
+    d64319bb.m.pipes.me --> https://discord.com/api/webhooks/...
+    3b231f9d.m.pipes.me --> https://discord.com/api/webhooks/...
+    ...
+    ```
+    
+    
 
 
 ## 📦 Installation (W.I.P)
