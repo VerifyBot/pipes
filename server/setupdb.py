@@ -40,6 +40,24 @@ tabels = dict(
     total_runs INTEGER DEFAULT 0
   );
   """,
+
+  # keep track of the executed runs
+  runs="""
+  CREATE TABLE runs (
+    id TEXT PRIMARY KEY,
+    pipe_id TEXT NOT NULL REFERENCES pipes(id) ON DELETE CASCADE,
+    sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    success BOOLEAN,
+    error TEXT,
+    
+    -- the request of the webhook initializer
+    request_info JSONB,
+    
+    -- the response from discord
+    response_info JSONB
+  );
+  """
 )
 
 
@@ -52,6 +70,10 @@ async def setup_db(pool: asyncpg.Pool, redo: list = None):
 
         logging.info(f"Dropping table {table}")
         await conn.execute(f"DROP TABLE IF EXISTS {table} CASCADE;")
+
+        if table == 'runs':
+          logging.info("^ Resetting total_runs from pipes")
+          await conn.execute("UPDATE pipes SET total_runs = 0")
 
       logging.info(f"Creating table {table}")
       await conn.execute(tabels[table])
@@ -73,4 +95,4 @@ async def main(*args, **kwargs):
 
 if __name__ == "__main__":
   loop = asyncio.get_event_loop()
-  loop.run_until_complete(main(redo=["pipes"]))
+  loop.run_until_complete(main(redo=["runs"]))

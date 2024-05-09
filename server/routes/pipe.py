@@ -14,9 +14,25 @@ from .utils import checks
 async def route_get_pipes(request: Request, db: Database, user: User):
   """Return the user's list of pipes"""
   pipes = await db.get_pipes(user)
-
   return json(dict(pipes=[asdict(pipe) for pipe in pipes]))
 
+@authorized
+async def route_get_pipe(request: Request, db: Database, user: User):
+  """Return a pipe by ID, and its recent runs."""
+  pipe_id = request.json.get("id")
+
+  if not pipe_id:
+    return json({"error": "Missing pipe id"})
+
+  pipe = await db.get_pipe(pipe_id)
+
+  if pipe is None or pipe.user_id != user.id:
+    return json({"error": "invalid pipe"})
+
+  return json(dict(
+    pipe=asdict(pipe),
+    runs=[asdict(run) for run in await db.get_runs(pipe_id, 0, 15)]
+  ))
 
 @authorized
 async def route_add_pipe(request: Request, db: Database, user: User):

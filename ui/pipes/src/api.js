@@ -53,7 +53,6 @@ class PipesApi extends ApiClient {
     // make sure the server is alive first
     const url = `${this.baseUrl}/health`;
 
-
     try {
       await fetch(url);
     } catch (e) {
@@ -87,7 +86,13 @@ class PipesApi extends ApiClient {
   }
 
   async editPipe(data) {
-    let keep = ["id", "description", "webhook_url", "hmac_header", "hmac_secret"];
+    let keep = [
+      "id",
+      "description",
+      "webhook_url",
+      "hmac_header",
+      "hmac_secret",
+    ];
     data = keepOnly(data, keep);
 
     return await this.post("/edit_pipe", data);
@@ -95,6 +100,18 @@ class PipesApi extends ApiClient {
 
   async deletePipe(data) {
     return await this.post("/delete_pipe", { id: data.id });
+  }
+
+  async getRuns(data) {
+    return await this.post(`/runs`, data);
+  }
+
+  async getRun(data) {
+    return await this.post(`/run`, data);
+  }
+
+  async getPipe(data) {
+    return await this.post('/pipe', data);
   }
 }
 

@@ -1,3 +1,4 @@
+import json
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -59,3 +60,33 @@ class Pipe:
     if self.last_run:
       self.last_run_ts = int(self.last_run.timestamp())
       self.last_run_human = humanize.naturaltime(datetime.now() - self.last_run)
+
+
+from dataclasses import field
+
+
+@dataclass
+class RunInfo:
+  id: str
+  pipe_id: str
+  sent_at: datetime
+  success: bool
+
+  sent_at_human: str = field(init=False, default=False)
+  sent_at_ts: int = field(init=False, default=False)
+
+  def __post_init__(self):
+    self.sent_at_ts = int(self.sent_at.timestamp())
+    self.sent_at_human = humanize.naturaltime(datetime.now() - self.sent_at)
+
+
+@dataclass
+class Run(RunInfo):
+  error: str
+  request_info: dict
+  response_info: dict
+
+  def __post_init__(self):
+    super().__post_init__()
+    self.request_info = json.loads(self.request_info) if self.request_info else {}
+    self.response_info = json.loads(self.response_info) if self.response_info else {}

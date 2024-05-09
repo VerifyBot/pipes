@@ -8,7 +8,6 @@ async def validate_pipe_info(js: dict) -> typing.Optional[str]:
   Return an error message if any.
   """
 
-
   if not (description := js.get("description")):
     return "Missing description"
 
@@ -18,7 +17,27 @@ async def validate_pipe_info(js: dict) -> typing.Optional[str]:
   # is valid webhook url?
   # https://discord.com/api/webhooks/<channel>/<secret>
 
-  if not (webhook_url := js.get("webhook_url")) or not re.match(r"https://discord.com/api/webhooks/\d+/\w+", webhook_url):
+  if not (webhook_url := js.get("webhook_url")) or not re.match(r"https://discord.com/api/webhooks/\d+/\w+",
+                                                                webhook_url):
     return "Invalid Discord Webhook URL"
+
+  return None
+
+async def validate_runs_info(js: dict) -> typing.Optional[str]:
+  """
+  Validate the runs information provided by a request.
+  Return an error message if any.
+  """
+
+  if not js.get("pipe_id"):
+    return "Missing pipe ID"
+
+  if not js.get("offset"):
+    js["offset"] = 0
+
+  if not js.get("limit"):
+    js["limit"] = 10
+
+  js["limit"] = max(1, min(100, js["limit"]))
 
   return None

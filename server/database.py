@@ -1,9 +1,11 @@
+import json
 import typing
 import uuid
+from typing import List
 
 import asyncpg
 
-from .models import User, Pipe
+from .models import User, Pipe, RunInfo, Run
 
 
 class Database:
@@ -94,3 +96,39 @@ class Database:
       user.id, user.email, user.username, user.avatar, user.role, user.access_token, user.refresh_token,
       user.expires_at, user.token
     )
+
+  ## RUNS QUERIES ##
+
+  async def log_run(self, pipe_id: str, success: bool, error: str = None, request_info: dict = None, response_info: dict = None):
+    """Log a run for a pipe."""
+
+    run_id = uuid.uuid4().hex[:8]
+
+    await self.pool.execute(
+      """
+      INSERT INTO runs (id, pipe_id, success, error, request_info, response_info)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      """,
+      run_id, pipe_id, success, error, json.dumps(request_info), json.dumps(response_info)
+    )
+
+
+  async def get_runs(self, pipe_id: str, offset: int, limit: int) -> list[RunInfo]:
+    """Return the runs for the pipe id"""
+
+
+    raw_runs = await self.pool.fetch(
+      """
+      SELECT id, pipe_id, sent_at, success FROM runs WHERE pipe_id = $1 ORDER BY sent_at DESC OFFSET $2 LIMIT $3
+      """,
+      pipe_id, offset, limit
+    )
+
+    return [RunInfo(**run) for run in raw_runs]
+
+
+  async def get_run(self, run_id: str) -> RunInfo:
+    """Return a run by ID"""
+
+    raw_run = await self.pool.fetchrow("SELECT * FROM runs WHERE id = $1", run_id)
+    return Run(**raw_run) if raw_run else None

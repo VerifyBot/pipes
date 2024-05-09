@@ -1,11 +1,12 @@
 <template>
   <v-container class="fill-height">
     <v-responsive class="align-centerfill-height mx-auto">
-      <div class="text-center justify-center d-flex flex-column">
+      <div class="text-center justify-center d-flex flex-column unselectable">
         <h1 class="text-h2 font-weight-bold">🚀 Pipes</h1>
         <div class="text-body-2 font-weight-light mb-n1"><i>pipe those webhooks to Discord</i></div>
         <div class="d-flex justify-center my-2">
-          <v-btn prepend-icon="mdi-github" size="small" onclick="window.open('https://github.com/VerifyBot/pipes')">github</v-btn>
+          <v-btn prepend-icon="mdi-github" size="small"
+            onclick="window.open('https://github.com/VerifyBot/pipes')">github</v-btn>
         </div>
       </div>
 
@@ -25,18 +26,23 @@
         </v-img>
       </div>
       <div v-else>
-        <div class="d-flex my-4 justify-space-between">
+        <div class="d-flex my-4 justify-space-between flex-wrap" style="gap: 10px;">
           <v-btn prepend-icon="mdi-pipe" color="indigo-darken-2" @click="addPipe()">New Pipe</v-btn>
-          <v-btn prepend-icon="mdi-lightbulb-question" color="pink-darken-3" @click="infoDialog = true;">Info</v-btn>
+
+          <div class="d-flex" style="gap: 10px">
+            <v-btn prepend-icon="mdi-refresh" color="blue-darken-3" @click="refreshPipes()">Refresh</v-btn>
+            <v-btn prepend-icon="mdi-lightbulb-question" color="pink-darken-3" @click="infoDialog = true;">Info</v-btn>
+          </div>
         </div>
 
         <!-- view pipes list (sort, filter) -->
         <v-data-table v-model:sort-by="pipesSortBy" :headers="pipesHeaders" :items="pipesArray" id="pipes-list"
           show-expand v-model:expanded="pipesExpanded">
+          <!-- show-expand v-model:expanded="pipesExpanded" -->
           <!-- pause-development :: put this as an attr for v-data-able -->
           <!-- :row-props="(row) => { return { style: { color: 'white', background: !row.item.active ? 'rgba(250,0,0, .2)' : null} } }" -->
           <template v-slot:item.url="{ item }">
-            <a :href="(isHttps ? 'https://' : 'http://') + item.url">{{ item.url }}</a>
+            <router-link :to="'/pipe/' + item.id">{{ item.url }}</router-link>
           </template>
 
           <template v-slot:item.description="{ item }">
@@ -74,12 +80,19 @@
 
           <template v-slot:expanded-row="{ columns, item }">
             <tr>
-              <td :colspan="columns.length">
-                Pipes to <b>{{ item.webhook_url }}</b>
+              <td :colspan="columns.length" style="line-break: anywhere;" v-if="item.id === pipeIdExpanded">
+                <v-data-table-server v-model:items-per-page="runsPerPage" :headers="runsHeaders" :items="pipeRuns"
+                  :items-length="totalRunsLength" :loading="runsLoading" item-value="name" :mobile="false"
+                  @update:options="loadNewRuns"></v-data-table-server>
               </td>
             </tr>
           </template>
         </v-data-table>
+
+        <!-- <div v-else class="d-flex justify-center flex-column align-center" style="gap: 10px">
+          <div class="text-center">⛅ Refreshing...</div>
+          <v-progress-circular color="indigo" indeterminate></v-progress-circular>
+        </div> -->
       </div>
 
 
@@ -89,15 +102,15 @@
   </v-container>
 
   <!-- Delete Pipe Dialog -->
-  <v-dialog v-model="dialogDelete" max-width="400">
+  <v-dialog v-model="dialogDelete" max-width="400" :persistent="isDeletingPipe">
     <v-card prepend-icon="mdi-delete" title="Delete this pipe?">
       <template v-slot:text>
         <b>{{ editedItem.description }}</b> with <b>{{ (editedItem.total_runs || 0).toLocaleString() }}</b> runs.
       </template>
       <template v-slot:actions>
         <v-spacer></v-spacer>
-        <v-btn color="blue-darken-1" @click="closeDelete">Cancel</v-btn>
-        <v-btn color="red-darken-1" @click="deleteItemConfirm">Delete</v-btn>
+        <v-btn :disabled="isDeletingPipe" color="blue-darken-1" @click="closeDelete">Cancel</v-btn>
+        <v-btn :loading="isDeletingPipe" color="red-darken-1" @click="deleteItemConfirm">Delete</v-btn>
         <v-spacer></v-spacer>
       </template>
     </v-card>
@@ -195,6 +208,10 @@
 </template>
 
 <style>
+.unselectable {
+  /* user-select: none; */
+}
+
 .v-input__details:has(> #hmac-switch-messages) {
   display: none;
 }
@@ -235,6 +252,10 @@ export default {
   },
 
   async mounted() {
+    setInterval(() => {
+      window.edited = this.editedItem
+    }, 100)
+
     this.isLoadingPipes = true;
 
     if (this.redirecting || this.serverDown) {
@@ -244,15 +265,15 @@ export default {
 
 
     setTimeout(() => {
-      if (!this.isLoadingPipes) return
+      if (!this.isLoadingPipes || this.serverDown) return
       this.loadingMessage = this.loadingMessageKind.hopeful;
 
       setTimeout(() => {
-        if (!this.isLoadingPipes) return
+        if (!this.isLoadingPipes || this.serverDown) return
         this.loadingMessage = this.loadingMessageKind.hopesemi;
 
         setTimeout(() => {
-          if (!this.isLoadingPipes) return
+          if (!this.isLoadingPipes || this.serverDown) return
           this.loadingMessage = this.loadingMessageKind.hopeless;
           this.serverDown = true;
         }, 1000 * 5);
@@ -292,6 +313,7 @@ export default {
       alertSnackbar: false,
       alertSnackbarMessage: "🚀",
 
+      // ## Pipes Data Table ##
       pipesExpanded: [],
 
       pipesSortBy: [{ key: 'url', order: 'asc' }],
@@ -305,7 +327,25 @@ export default {
       ],
       pipesArray: [],
 
-      dialog: true,
+      // ## Runs Data Table ##
+      pipeRuns: [],
+      pipeIdExpanded: null,
+
+      runsPerPage: 10,
+
+      runsHeaders: [
+        { title: '', key: 'success' },
+        { title: 'ID', key: 'id', sortable: false },
+        { title: 'Created At', key: 'created_at' },
+      ],
+
+      totalRunsLength: 0,
+      runsLoading: false,
+
+
+      // ## Dialogs ## 
+
+      dialog: false,
       dialogDelete: false,
       infoDialog: false,
 
@@ -328,6 +368,8 @@ export default {
       loadingMessage: 'I will be ready shortly',
       serverDown: false,
       isCreatingPipe: false,
+      isDeletingPipe: false,
+
       loadingMessageKind: {
         hopeful: "The server might have morphed into a turtle... 🐢💨",
         hopesemi: "Is it a bird? A plane? Definitely not a server... 🦅🛩️",
@@ -363,6 +405,7 @@ export default {
     dialog(val) {
       if (!val) {
         this.useHmac = false;
+        this.pipeEditError = null;
         this.close();
       }
     },
@@ -377,8 +420,18 @@ export default {
 
 
 
-    pipesExpanded(val) {
-      // todo
+    pipesExpanded(newArr) {
+      // goal: keep only the last expanded pipe (last in the array)
+      // second goal: load the recent runs for the expanded pipe
+
+      if (newArr.length > 1) {
+        // remove the first expanded pipe
+        this.pipesExpanded = newArr.slice(1);
+      }
+
+      if (newArr.length === 1) {
+        this.loadRecentRuns(newArr[0]);
+      }
     }
   },
   methods: {
@@ -395,11 +448,22 @@ export default {
       this.dialogDelete = true
     },
 
-    deleteItemConfirm() {
-      this.api.deletePipe(this.editedItem);
+    async deleteItemConfirm() {
+      this.isDeletingPipe = true;
+
+      try {
+        await this.api.deletePipe(this.editedItem);
+      } catch (e) {
+        this.showSnackbar(`❌ Failed to delete pipe`);
+        this.isDeletingPipe = false;
+        return;
+      }
+
       this.pipesArray.splice(this.editedIndex, 1)
-      this.closeDelete();
+      this.isDeletingPipe = false;
       this.showSnackbar(`👋 Pipe deleted`);
+
+      this.closeDelete();
     },
 
     closeDelete() {
@@ -424,7 +488,8 @@ export default {
     },
 
     close() {
-      this.dialog = false
+      this.dialog = false;
+
       this.$nextTick(() => {
         this.editedItem = Object.assign({}, this.defaultItem)
         this.editedIndex = -1
@@ -443,16 +508,39 @@ export default {
       if (validations.some(v => v && v.length))
         return;
 
+      if (!this.useHmac) {
+        this.editedItem.hmac_header = this.defaultItem.hmac_header;
+        this.editedItem.hmac_secret = this.defaultItem.hmac_secret;
+      }
 
       if (this.editedIndex > -1) {
+        this.isCreatingPipe = true;
+
+        try {
+          console.log("editing pipe...")
+          await this.api.editPipe(this.editedItem);
+        } catch (e) {
+          this.pipeEditError = "Failed to update pipe";
+          this.isCreatingPipe = false;
+          return;
+        }
+
         Object.assign(this.pipesArray[this.editedIndex], this.editedItem)
-        this.api.editPipe(this.pipesArray[this.editedIndex]);
         this.showSnackbar(`✨ Pipe updated`);
+
+        this.isCreatingPipe = false;
       } else {
         this.isCreatingPipe = true;
 
-        const js = await this.api.addPipe(this.editedItem)
-        this.showSnackbar(`🚀 Pipe created`);
+        let js;
+        try {
+          js = await this.api.addPipe(this.editedItem)
+        } catch (e) {
+          this.pipeEditError = "Failed to create pipe";
+          this.isCreatingPipe = false;
+          return;
+        }
+
 
         if (js.error) {
           this.pipeEditError = js.error;
@@ -461,6 +549,8 @@ export default {
         }
 
         this.pipesArray.push(js)
+        this.showSnackbar(`🚀 Pipe created`);
+
         this.isCreatingPipe = false;
       }
       this.close()
@@ -490,6 +580,51 @@ export default {
         this.showSnackbar(`❌ Test failed: ${e.message}`);
       }
 
+
+    },
+
+    async refreshPipes() {
+      this.showSnackbar('⛅ Refreshing...');
+
+      let js;
+      try {
+        js = await this.api.getPipes();
+      } catch (e) {
+        this.showSnackbar('❌ Failed to refresh pipes');
+        return;
+      }
+
+      this.pipesArray = js.pipes;
+
+      this.showSnackbar('🔄 Pipes refreshed');
+    },
+
+    async loadRecentRuns(pipe_id) {
+      this.pipeIdExpanded = pipe_id;
+    },
+
+    async loadNewRuns({ page, itemsPerPage, sortBy }) {
+      this.runsLoading = true;
+
+      console.log(page, itemsPerPage, sortBy)
+      console.log({ pipe_id: this.pipeIdExpanded, page, itemsPerPage })
+
+      let runs = await this.api.getRuns({
+        pipe_id: this.pipeIdExpanded,
+        offset: (page - 1) * itemsPerPage,
+        limit: itemsPerPage
+      });
+
+      this.pipeRuns = runs.runs;
+
+      this.runsLoading = false;
+
+      // update the pipe with the recent runs
+    },
+
+    navigateToPipe(id) {
+
+      this.$router.push({ path: `/pipe`, params: { id } });
 
     }
 
