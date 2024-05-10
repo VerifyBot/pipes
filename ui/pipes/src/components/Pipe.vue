@@ -226,7 +226,19 @@ export default {
 
   async mounted() {
 
-    const { pipe, runs } = await this.api.getPipe({ id: this.$route.params.id });
+    const js = await this.api.getPipe({ id: this.$route.params.id });
+
+    // likely invalid pipe... set 404
+    if (js.error) {
+      console.log('pushing')
+      location.href = '/where-did-you-come-from'
+      console.log('bye...')
+      return;
+    }
+
+    const { pipe, runs } = js;
+
+
     this.pipe = pipe;
     this.runs = runs;
     console.table(this.runs)
