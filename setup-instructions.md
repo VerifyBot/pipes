@@ -130,6 +130,7 @@ source .venv/bin/activate
 
 run the server
 ```shell
+tmux
 sanic server:app -p 6969
 ```
 

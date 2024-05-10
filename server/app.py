@@ -28,6 +28,24 @@ class Pipes:
     ## Routes ##
     self.load_routes()
 
+  async def setup_hook(self, app: Sanic):
+    logging.info("Setting up db connection")
+
+    pool = await asyncpg.create_pool(
+      user=self.config.get("database", "username"),
+      password=self.config.get("database", "password"),
+      database=self.config.get("database", "database"),
+    )
+
+    db_conn = Database(pool)
+    app.ctx.db = db_conn
+    app.ext.dependency(db_conn, name="db")
+
+  async def close_hook(self, app: Sanic):
+    logging.info("Closing db connection")
+    db_conn: Database = app.ctx.db
+    await db_conn.pool.close()
+
   def register_listeners(self):
     self.app.register_listener(self.setup_hook, "before_server_start")
     self.app.register_listener(self.close_hook, "before_server_stop")
@@ -79,21 +97,3 @@ class Pipes:
 
     self.app.add_route(route_hello, "/", methods=["GET"])
     self.app.add_route(route_health, "/health", methods=["GET"])
-
-  async def setup_hook(self, app: Sanic):
-    logging.info("Setting up db connection")
-
-    pool = await asyncpg.create_pool(
-      user=self.config.get("database", "username"),
-      password=self.config.get("database", "password"),
-      database=self.config.get("database", "database"),
-    )
-
-    db_conn = Database(pool)
-    app.ctx.db = db_conn
-    app.ext.dependency(db_conn, name="db")
-
-  async def close_hook(self, app: Sanic):
-    logging.info("Closing db connection")
-    db_conn: Database = app.ctx.db
-    await db_conn.pool.close()

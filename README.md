@@ -1,17 +1,19 @@
-# 🚀  Pipes
+# 🚀 Pipes
 
 pipe those webhooks to Discord
 
 ## 🎉 Motivation
 
-Many services offer you to add a webhook url to get notified when something happens (eg: [github](https://docs.github.com/en/webhooks/about-webhooks)).
+Many services offer you to add a webhook url to get notified when something happens (
+eg: [github](https://docs.github.com/en/webhooks/about-webhooks)).
 
 But what if you want a Discord Bot to handle that? <br>
 Well, unless you're running on a
 server that has a domain / static IP and is reachable from the internet, you're out of luck.
 
 If you're like me, you're going to think about using Discord's Webhook feature to send messages to a channel,
-and then intercept those messages with the bot via an [on_message](https://discordpy.readthedocs.io/en/stable/api.html#discord.on_message) event.
+and then intercept those messages with the bot via
+an [on_message](https://discordpy.readthedocs.io/en/stable/api.html#discord.on_message) event.
 Yay, Everything is good now! Right...?
 
 Sadly no, those providers that offer you to add a webhook url don't allow you to customize the payload.
@@ -32,8 +34,8 @@ Hopefuly, this will help you as much as it helped me.
 ## 🎯 Goals
 
 - [x] In order to avoid/monitor spammers and abuse, I want to implement an authentication system.
-        The current solution is Discord's OAuth2, that way I can both verify that you even need this service,
-        and if I ever want to add features that require Discord user data, I can change the scope and do so.
+  The current solution is Discord's OAuth2, that way I can both verify that you even need this service,
+  and if I ever want to add features that require Discord user data, I can change the scope and do so.
 - [x] One of my main gols is to be able to have dynamic subdomains, just because it's cool:
     ```
     Your URLs:
@@ -42,17 +44,13 @@ Hopefuly, this will help you as much as it helped me.
     3b231f9d.m.pipes.me --> https://discord.com/api/webhooks/...
     ...
     ```
-    
-    
 
-
-## 📦 Installation (W.I.P)
-
-I'll hopefully use Docker for this :)
+## 📦 Installation
 
 You need to:
-  - setup a server, get a domain.
-  - clone the repo
-  - build the ui (npm i && npm run build)
-  - setup the config.ini under `server`
-  - run the server in the background (tmux, etc.)
+
+- get a domain and a host (I use DigitalOcean)
+- follow `setup-instructions.md` to setup the server
+- clone the repo and run.
+
+⚡ **todo**: Use Docker for this ...
